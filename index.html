@@ -3309,6 +3309,7 @@ function startMain(){
     navigator.mediaDevices.getUserMedia({video:true})
       .then(s=>{
         document.getElementById('video').srcObject=s;
+       window.myCameraStream = s;
         initFaceMesh();
       })
       .catch(e=>{
@@ -3322,23 +3323,81 @@ function startMain(){
   }
 }
 
-function stopCamera(){
-  if(camUtils){ try{camUtils.stop();}catch(e){} camUtils=null; }
-  const v=document.getElementById('video');
-  if(v.srcObject){ v.srcObject.getTracks().forEach(t=>t.stop()); v.srcObject=null; }
-  mainReady=false; particles=[];
-  if(glasses) glasses.visible=false;
-  sessionStart=null;
-  irisTrails.L=[]; irisTrails.R=[];
-  // Reset intro for re-entry
-  typewriterDone=false; audioEnded=false;
-  const introEl = document.getElementById('intro-sentence');
-  if(introEl){ introEl.classList.remove('visible'); introEl.innerHTML=''; }
-  document.getElementById('continue-btn').classList.remove('visible');
-  document.getElementById('audio-bar').classList.remove('visible');
-  audioFill.style.width='0%';
-  audioEl.currentTime=0;
+// function stopCamera(){
+//   if(camUtils){ try{camUtils.stop();}catch(e){} camUtils=null; }
+//   const v=document.getElementById('video');
+//   if(v.srcObject){ v.srcObject.getTracks().forEach(t=>t.stop()); v.srcObject=null; }
+//   mainReady=false; particles=[];
+//   if(glasses) glasses.visible=false;
+//   sessionStart=null;
+//   irisTrails.L=[]; irisTrails.R=[];
+//   // Reset intro for re-entry
+//   typewriterDone=false; audioEnded=false;
+//   const introEl = document.getElementById('intro-sentence');
+//   if(introEl){ introEl.classList.remove('visible'); introEl.innerHTML=''; }
+//   document.getElementById('continue-btn').classList.remove('visible');
+//   document.getElementById('audio-bar').classList.remove('visible');
+//   audioFill.style.width='0%';
+//   audioEl.currentTime=0;
+// }
+
+function stopCamera() {
+    // 1. 【強制釋放】停止全域追蹤的鏡頭流
+    if (window.myCameraStream) {
+        try {
+            window.myCameraStream.getTracks().forEach(t => t.stop());
+        } catch (e) { console.log("Stream stop error:", e); }
+        window.myCameraStream = null;
+    }
+
+    // 2. 【原始邏輯】處理 camUtils
+    if (camUtils) { 
+        try { camUtils.stop(); } catch (e) {} 
+        camUtils = null; 
+    }
+
+    // 3. 【加強檢查】從 Video 標籤再次確保關閉
+    const v = document.getElementById('video');
+    if (v && v.srcObject) {
+        try {
+            v.srcObject.getTracks().forEach(t => t.stop());
+        } catch (e) {}
+        v.srcObject = null;
+    }
+
+    // --- 以下是你原本程式碼中的所有狀態重置 ---
+    mainReady = false; 
+    particles = [];
+    if (typeof glasses !== 'undefined' && glasses) glasses.visible = false;
+    
+    sessionStart = null;
+    if (typeof irisTrails !== 'undefined') {
+        irisTrails.L = []; 
+        irisTrails.R = [];
+    }
+
+    // Reset intro for re-entry
+    typewriterDone = false; 
+    audioEnded = false;
+    
+    const introEl = document.getElementById('intro-sentence');
+    if (introEl) {
+        introEl.classList.remove('visible');
+        introEl.innerHTML = '';
+    }
+
+    const continueBtn = document.getElementById('continue-btn');
+    if (continueBtn) continueBtn.classList.remove('visible');
+
+    const audioBar = document.getElementById('audio-bar');
+    if (audioBar) audioBar.classList.remove('visible');
+
+    if (typeof audioFill !== 'undefined' && audioFill) audioFill.style.width = '0%';
+    if (typeof audioEl !== 'undefined' && audioEl) audioEl.currentTime = 0;
+    
+    console.log("Camera and Scene reset complete.");
 }
+
 
 window.addEventListener('resize',()=>{
   if(!renderer3d) return;
